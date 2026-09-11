@@ -2386,7 +2386,7 @@ if (typeof XLSX === "undefined") console.warn("XLSX embarqué introuvable");</sc
       <button class="dt-btn" onclick="openChangePasswordModal()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--gold-500, #C9A227);"><rect x="4.5" y="10.5" width="15" height="10" rx="1.6"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path><circle cx="12" cy="15" r="1.4"></circle><path d="M12 16.4V18"></path></svg> <span id="password-btn-label">Activer un mot de passe</span></button>
       <button class="dt-btn" onclick="openLicenseModal()" title="Licence, code d'installation et renouvellement"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--gold-400, #D9BA55);"><circle cx="8" cy="12" r="4"></circle><path d="M12 12h9"></path><path d="M17.5 12v3.5"></path><path d="M20.5 12v2.5"></path></svg> Ma licence</button>
       <button class="dt-btn" onclick="ouvrirAideRaccourcis()" title="Liste des raccourcis clavier" style="font-size:11.5px;">Raccourcis clavier <span style="opacity:.6;">(?)</span></button>
-      <div id="sidebar-copyright" style="opacity: 0.7; font-size: 10.5px; margin-top: 10px; text-align: center; color: var(--side-fg); font-weight: 400;">© 2026 Dr ARFAOUI Dhia Eddine · Tous droits réservés<br><span style="opacity:.75;">APTIS V3.19</span></div>
+      <div id="sidebar-copyright" style="opacity: 0.7; font-size: 10.5px; margin-top: 10px; text-align: center; color: var(--side-fg); font-weight: 400;">© 2026 Dr ARFAOUI Dhia Eddine · Tous droits réservés<br><span style="opacity:.75;">APTIS V3.21</span></div>
     </div>
   </aside>
 
@@ -3275,7 +3275,7 @@ function updateSidebarFootNote() {
     foot.textContent = `⚠ Plus d'une heure sans enregistrer (${minutes} min) — cliquez sur « Enregistrer »`;
     foot.style.color = '#F5C4B8'; foot.style.opacity = '1'; foot.style.fontWeight = '600';
   } else {
-    foot.innerHTML = '© 2026 Dr ARFAOUI Dhia Eddine · Tous droits réservés<br><span style="opacity:.75;">APTIS V3.19</span>';
+    foot.innerHTML = '© 2026 Dr ARFAOUI Dhia Eddine · Tous droits réservés<br><span style="opacity:.75;">APTIS V3.21</span>';
     foot.style.color = 'var(--side-fg, #C4CAD9)'; foot.style.opacity = '.7'; foot.style.fontWeight = '400';
   }
 }
@@ -4047,6 +4047,25 @@ function afterSaveSuccess(name, fileId, mode) {
 const POSTE_ADMIN_RE = /\b(administrat|bureau|secretai|secretar|comptab|gestionnaire|gestion du|ressources humaines|\brh\b|financ|achat|approvisionn|commercial|vente|vendeu|caissi|guichet|standardi|receptionni|accueil|archivi|juri|informatic|saisie|statisticien|planificateu|assistant|direct|chef de service|cadre administratif)/;
 const POSTE_TECH_RE  = /\b(ouvri|technici|technique|operateu|operatri|soudeu|carist|manuten|magasini|mecanic|electric|electromecanic|chaudronn|tourneu|fraiseu|ajusteu|plombi|macon|peintre|menuisi|monteu|cableu|couturi|piqueu|coupeu|tricoteu|teinturi|conducteu|chauffeu|machinist|agent de maitrise|chef d.equipe|contremaitre|maintenance|entretien|nettoyage|menage|gardien|securite|laborantin|laboratoire|boulang|patissi|cuisini|manoeuvre|emballeu|controleu)/;
 
+/* La catégorie retenue : ce que le médecin a choisi, sinon ce que le poste
+   laisse déduire. Une déduction n'écrase jamais un choix explicite. */
+function categorieEmploye(e) {
+  if (!e) return '';
+  return e.categoriePersonnel || classerPoste(e.poste);
+}
+function estPermanent(e) { return !e || (e.permanence || 'permanent') !== 'nonPermanent'; }
+/* Dans la fiche employé : dire ce que le poste a laissé déduire. */
+function majCategorieDeduite() {
+  const aide = document.getElementById('f-categorie-deduite');
+  const sel = document.getElementById('f-categorie-personnel');
+  const poste = document.getElementById('f-poste');
+  if (!aide || !sel) return;
+  if (sel.value) { aide.textContent = 'Choix retenu ; la déduction du poste est ignorée.'; aide.style.color = ''; return; }
+  const cat = classerPoste(poste ? poste.value : '');
+  if (cat) { aide.textContent = 'Déduit du poste : ' + (cat === 'admin' ? 'administratif' : 'technique') + '.'; aide.style.color = 'var(--t-vert-fg)'; }
+  else { aide.textContent = "Le poste ne permet pas de déduire : choisissez, sinon ce salarié manquera au point 1-3."; aide.style.color = 'var(--t-or-fg)'; }
+}
+
 function classerPoste(poste) {
   const p = stripDiacritics((poste || '').toString()).toLowerCase();
   if (!p.trim()) return '';
@@ -4056,13 +4075,18 @@ function classerPoste(poste) {
 }
 
 function repartirAdminTechnique(emps) {
-  const r = { adminH: 0, adminF: 0, techH: 0, techF: 0, nonClasses: 0 };
+  // Huit cases : administratif / technique × permanent / non permanent × H / F.
+  const r = { adminH: 0, adminF: 0, techH: 0, techF: 0, nonClasses: 0,
+    admPermH: 0, admPermF: 0, admNonPermH: 0, admNonPermF: 0,
+    techPermH: 0, techPermF: 0, techNonPermH: 0, techNonPermF: 0 };
   (emps || []).forEach(e => {
-    const cat = classerPoste(e.poste);
+    const cat = categorieEmploye(e);
     if (!cat) { r.nonClasses++; return; }
     const g = e.genre === 'M' ? 'H' : (e.genre === 'F' ? 'F' : null);
     if (!g) { r.nonClasses++; return; }   // sans genre, il ne peut aller dans aucune colonne
     r[cat + g]++;
+    const prefixe = cat === 'admin' ? 'adm' : 'tech';
+    r[prefixe + (estPermanent(e) ? 'Perm' : 'NonPerm') + g]++;
   });
   return r;
 }
@@ -5036,10 +5060,10 @@ function exportAnnualReportPDF(companyId, year) {
   const saisieManuelle = ['admPermH', 'admPermF', 'admNonPermH', 'admNonPermF', 'techPermH', 'techPermF', 'techNonPermH', 'techNonPermF']
     .some(k => (notes[k] || '').toString().trim() !== '');
   const eff13 = saisieManuelle ? notes : {
-    admPermH: rep.adminH || '', admPermF: rep.adminF || '',
-    admNonPermH: '', admNonPermF: '',
-    techPermH: rep.techH || '', techPermF: rep.techF || '',
-    techNonPermH: '', techNonPermF: '',
+    admPermH: rep.admPermH || '', admPermF: rep.admPermF || '',
+    admNonPermH: rep.admNonPermH || '', admNonPermF: rep.admNonPermF || '',
+    techPermH: rep.techPermH || '', techPermF: rep.techPermF || '',
+    techNonPermH: rep.techNonPermH || '', techNonPermF: rep.techNonPermF || '',
   };
   const somme13 = ['admPermH', 'admPermF', 'admNonPermH', 'admNonPermF', 'techPermH', 'techPermF', 'techNonPermH', 'techNonPermF']
     .reduce((n, k) => n + (parseInt(eff13[k]) || 0), 0);
@@ -5223,6 +5247,15 @@ function exportAnnualReportPDF(companyId, year) {
     <div class="rp-page">
       ${orgHeader}
       <div class="rp-h1">3-7 SECOURISME</div>
+      ${d.at && d.at.total ? `<div class="rp-h3">3-6-4 Accidents du travail constatés ou suivis</div>
+      <table><thead><tr><th style="text-align:left;">Nature</th><th>Nombre</th><th>Salariés concernés</th><th>Journées de repos</th></tr></thead>
+        <tbody>
+          <tr><td>Accidents du travail</td>${num(d.at.travail)}${num(new Set(d.at.liste.filter(a => !/trajet/i.test(a.type)).map(a => a.employeeId)).size)}${num(d.at.liste.filter(a => !/trajet/i.test(a.type)).reduce((n, a) => n + a.repos, 0))}</tr>
+          <tr><td>Accidents de trajet</td>${num(d.at.trajet)}${num(new Set(d.at.liste.filter(a => /trajet/i.test(a.type)).map(a => a.employeeId)).size)}${num(d.at.liste.filter(a => /trajet/i.test(a.type)).reduce((n, a) => n + a.repos, 0))}</tr>
+          <tr><td><strong>Total</strong></td><td class="rp-num"><strong>${d.at.total}</strong></td><td class="rp-num"><strong>${d.at.salaries}</strong></td><td class="rp-num"><strong>${d.at.jours}</strong></td></tr>
+        </tbody></table>
+      <div class="rp-small">Dont ${d.at.sequelles} avec séquelles constatées. Ces chiffres proviennent des accidents notés lors des visites médicales.</div>` : ''}
+
       <div class="rp-h3">3-7-1 Organisation des secours et moyens d'évacuation</div>
       ${box('secourisme')}
       <div class="rp-h3">3-7-2 Formation et recyclage en sauvetage et secourisme</div>
@@ -6776,6 +6809,65 @@ function lireAccidentTravail() {
   return (a.type || a.date || a.circonstances || a.lesions || a.sequelles) ? a : null;
 }
 
+/* Le motif de la reprise commande cinq lignes du point 3-3 : le demander vaut
+   mieux que de le deviner dans les notes. */
+function majMotifReprise() {
+  const sel = document.getElementById('f-nature-select');
+  const wrap = document.getElementById('f-reprise-wrap');
+  if (!sel || !wrap) return;
+  wrap.style.display = sel.value === 'RT' ? 'block' : 'none';
+}
+/* La surveillance particulière : APTIS propose d'après le poste et ce que la
+   visite a déjà relevé, mais c'est le médecin qui coche. */
+function majSurveillanceParticuliere() {
+  const c = document.getElementById('f-sms');
+  const bloc = document.getElementById('f-sms-motifs');
+  if (!c || !bloc) return;
+  bloc.style.display = c.checked ? 'block' : 'none';
+  if (c.checked) suggererMotifsSms();
+}
+/* Trois des six motifs sont déjà connus de la visite : l'âge vient de la date
+   de naissance, le handicap de la case des antécédents personnels, la grossesse
+   et l'allaitement de l'observation. Les redemander serait une double saisie et
+   une source d'écart. Seuls les deux risques liés au poste restent à cocher. */
+function motifsSmsDeduits() {
+  const d = [];
+  const m18 = document.getElementById('f-moins18');
+  if (m18 && m18.checked) d.push({ code: 'inf18', libelle: 'Travailleur de moins de 18 ans', source: 'date de naissance' });
+  const handicapCase = document.getElementById('f-handicap');
+  if (handicapCase && handicapCase.checked) d.push({ code: 'handicap', libelle: 'Travailleur handicapé', source: 'antécédents personnels' });
+  const grossesse = Array.from(document.querySelectorAll('.f-notes-check'))
+    .some(c => c.checked && /enceinte|allait/i.test(c.value || ''));
+  if (grossesse) d.push({ code: 'grossesse', libelle: 'Grossesse ou allaitement', source: 'observation (morbidité)' });
+  return d;
+}
+function suggererMotifsSms() {
+  const aide = document.getElementById('f-sms-suggere');
+  const auto = document.getElementById('f-sms-auto');
+  if (!aide) return;
+  const empEl = document.getElementById('f-employee');
+  const emp = empEl ? state.employees.find(e => e.id === empEl.value) : null;
+  const poste = ((document.getElementById('f-poste-visite') || {}).value || '') + ' ' + ((emp && emp.poste) || '');
+  const propose = [];
+  if (/(chantier|hauteur|cariste|chariot|conducteu|chauffeu|soud|machine|presse|manuten|electri|maint|ouvri|manoeuvre|magasin)/i.test(poste)) propose.push('risque d\'accident');
+  try { if (MP_POSTE_RULES.some(r => r.re.test(poste))) propose.push('risque de maladie professionnelle'); } catch (e) {}
+  aide.textContent = propose.length
+    ? 'D\'après le poste : ' + propose.join(', ') + '.'
+    : "Rien de repérable dans le poste : cochez ce qui s'applique.";
+  if (auto) {
+    const d = motifsSmsDeduits();
+    auto.innerHTML = d.length
+      ? 'Retenus d\'eux-mêmes : ' + d.map(x => `<b>${x.libelle}</b> (${x.source})`).join(', ') + '.'
+      : '';
+    auto.style.color = d.length ? 'var(--t-vert-fg)' : '';
+  }
+}
+/* Ce qui est enregistré : les deux cases cochées, plus ce que la visite déduit. */
+function lireMotifsSms() {
+  const coches = Array.from(document.querySelectorAll('.f-sms-motif:checked')).map(c => c.value);
+  return Array.from(new Set(coches.concat(motifsSmsDeduits().map(x => x.code))));
+}
+
 function majMotifConsultation() {
   const sel = document.getElementById('f-nature-select');
   const wrap = document.getElementById('f-motif-wrap');
@@ -6789,6 +6881,7 @@ function majChampSA() {
   const enceinte = Array.from(document.querySelectorAll('.f-notes-check'))
     .some(c => c.value === 'Enceinte' && c.checked && !c.disabled);
   wrap.style.display = enceinte ? 'block' : 'none';
+  try { suggererMotifsSms(); } catch (e) {}
   if (!enceinte) {
     const f = document.getElementById('f-sa');
     if (f) f.value = '';
@@ -9603,7 +9696,9 @@ function computeAnnualReportData(companyId, year) {
     grossesse: uniq(yearVisits.filter(isPregnant), v => v.employeeId),
     handicap: uniq(yearVisits.filter(v => v.handicap), v => v.employeeId),
     chronique: uniq(yearVisits.filter(isChronic), v => v.employeeId),
-    at: emps.filter(isAtExposed).length,
+    at: Math.max(
+      uniq(yearVisits.filter(v => v.sms && (v.smsMotifs || []).includes('at')), v => v.employeeId),
+      emps.filter(isAtExposed).length),
     mp: emps.filter(isMpExposed).length,
   };
   sms.total = sms.inf18 + sms.grossesse + sms.handicap + sms.chronique + sms.at + sms.mp;
@@ -9620,8 +9715,8 @@ function computeAnnualReportData(companyId, year) {
     handicap: vpVisits.filter(v => v.handicap).length,
     chronique: vpVisits.filter(isChronic).length,
     grossesse: vpVisits.filter(isPregnant).length,
-    at: vpVisits.filter(v => isAtExposed(empOf(v))).length,
-    mp: vpVisits.filter(v => isMpExposed(empOf(v))).length,
+    at: vpVisits.filter(v => (v.sms && (v.smsMotifs || []).includes('at')) || isAtExposed(empOf(v))).length,
+    mp: vpVisits.filter(v => (v.sms && (v.smsMotifs || []).includes('mp')) || isMpExposed(empOf(v))).length,
   };
   const vpFlagged = new Set(vpVisits.filter(v => v.moins18 || v.handicap || isChronic(v) || isPregnant(v) || isAtExposed(empOf(v)) || isMpExposed(empOf(v))).map(v => v.id));
   vpCat.autres = vpVisits.length - vpFlagged.size;
@@ -9647,13 +9742,40 @@ function computeAnnualReportData(companyId, year) {
   // 3.1 C — reprises par motif (d'après le texte de la visite)
   const rtVisits = yearVisits.filter(v => v.nature === 'RT');
   const rtTxt = (v) => [v.notes, v.posteVisite, v.restrictionsAptitude].filter(Boolean).join(' ').toLowerCase();
-  const rtCat = {
-    at: rtVisits.filter(v => /accident|\bat\b/.test(rtTxt(v))).length,
-    mp: rtVisits.filter(v => /maladie prof|\bmp\b/.test(rtTxt(v))).length,
-    maternite: rtVisits.filter(v => /matern|accouch|grossesse/.test(rtTxt(v))).length,
-    repetee: rtVisits.filter(v => /r[ée]p[ée]t/.test(rtTxt(v))).length,
+  // Le motif déclaré dans la visite prime ; les mots-clés ne servent plus que
+  // pour les visites enregistrées avant que le champ existe.
+  const motifRt = (v, code, re) => v.motifReprise ? v.motifReprise === code : re.test(rtTxt(v));
+  /* Accidents du travail constatés ou suivis dans l'année, et journées de
+     repos qu'ils ont coûtées. Un même accident revu plusieurs fois ne compte
+     qu'une fois : on le reconnaît à sa date. */
+  const accidents = [];
+  const vusAt = new Set();
+  yearVisits.filter(v => v.accidentTravail && v.accidentTravail.declare).forEach(v => {
+    const a = v.accidentTravail;
+    const cle = [v.employeeId, a.date || v.date].join('|');
+    if (vusAt.has(cle)) return;
+    vusAt.add(cle);
+    accidents.push({ employeeId: v.employeeId, type: a.type || '', date: a.date || v.date,
+      repos: parseInt(a.repos, 10) || 0, sequelles: (a.sequelles || '').trim(), visitId: v.id });
+  });
+  const at = {
+    total: accidents.length,
+    travail: accidents.filter(a => !/trajet/i.test(a.type)).length,
+    trajet: accidents.filter(a => /trajet/i.test(a.type)).length,
+    salaries: new Set(accidents.map(a => a.employeeId)).size,
+    jours: accidents.reduce((n, a) => n + a.repos, 0),
+    sequelles: accidents.filter(a => a.sequelles && !/^aucune?$/i.test(a.sequelles)).length,
+    liste: accidents,
   };
-  rtCat.absence21 = Math.max(0, rtVisits.length - rtCat.at - rtCat.mp - rtCat.maternite - rtCat.repetee);
+
+  const rtCat = {
+    at: rtVisits.filter(v => motifRt(v, 'at', /accident|\bat\b/)).length,
+    mp: rtVisits.filter(v => motifRt(v, 'mp', /maladie prof|\bmp\b/)).length,
+    maternite: rtVisits.filter(v => motifRt(v, 'maternite', /matern|accouch|grossesse/)).length,
+    repetee: rtVisits.filter(v => motifRt(v, 'repetees', /r[ée]p[ée]t/)).length,
+  };
+  rtCat.absence21 = rtVisits.filter(v => v.motifReprise === 'absence21').length
+    || Math.max(0, rtVisits.length - rtCat.at - rtCat.mp - rtCat.maternite - rtCat.repetee);
 
   // 3.2 examens complémentaires : surveillance spéciale vs autres
   const isSMS = (v) => v.moins18 || v.plus55 || v.handicap || isChronic(v) || isPregnant(v) || isMpExposed(empOf(v));
@@ -9738,7 +9860,7 @@ function computeAnnualReportData(companyId, year) {
   const visitsAptitudeAttente = yearVisits.filter(v => ['VE', 'VP', 'RT'].includes(v.nature) && !['apte', 'reserve', 'inapte'].includes(familleAptitude(v.resultat)));
 
   return {
-    company, year, hommes, femmes, total, genreNonPrecise, repartition, pctVusPeriodique, sms,
+    company, year, hommes, femmes, total, genreNonPrecise, repartition, pctVusPeriodique, sms, at,
     ve: countNature('VE'), vp: countNature('VP'), vpCat, mpRiskLabels,
     rt: countNature('RT'), rtCat, rs: countNature('RS'), vs: countNature('VS'),
     vpPlus55: vpVisits.filter(v => v.plus55).length, vpHandicap: vpCat.handicap,
@@ -13658,9 +13780,31 @@ function openEmployeeModal(preselectCompanyId, editId) {
     </div>
     <div class="emp-section emp-sec-gold"><div class="emp-sec-title">${svgIcon('briefcase', 14)} Poste de travail</div>
       <div style="display:flex; gap:12px;">
-        <div class="field" style="flex:1;"><label>Poste</label><input type="text" id="f-poste" placeholder="EX. OUVRIER, CADRE TECHNIQUE" value="${editing ? esc(editing.poste) : ''}" oninput="saisieMajuscules(this)"></div>
+        <div class="field" style="flex:1;"><label>Poste</label><input type="text" id="f-poste" placeholder="EX. OUVRIER, CADRE TECHNIQUE" value="${editing ? esc(editing.poste) : ''}" oninput="saisieMajuscules(this); majCategorieDeduite();"></div>
         <div class="field" style="flex:0 0 150px;"><label>Année d'embauche</label><input type="text" id="f-annee-embauche" inputmode="numeric" placeholder="2022 ou 03/2022" maxlength="7" value="${esc(prefillAnnee)}"
           oninput="masqueMoisAnnee(this)"></div>
+      </div>
+      <div class="visit-grid-2">
+        <div class="field">
+          <label>Catégorie de personnel <span class="muted" style="font-weight:400;">(point 1-3 du rapport annuel)</span></label>
+          <select id="f-categorie-personnel" onchange="majCategorieDeduite()">
+            ${[['', '— déduite du poste'], ['admin', 'Administratif'], ['tech', 'Technique']].map(([v, l]) => {
+              const actuel = editing ? (editing.categoriePersonnel || '') : '';
+              return `<option value="${v}" ${actuel === v ? 'selected' : ''}>${l}</option>`;
+            }).join('')}
+          </select>
+          <div class="field-hint" id="f-categorie-deduite" style="margin-top:3px;"></div>
+        </div>
+        <div class="field">
+          <label>Situation</label>
+          <select id="f-permanence">
+            ${[['permanent', 'Permanent'], ['nonPermanent', 'Non permanent']].map(([v, l]) => {
+              const actuel = editing ? (editing.permanence || 'permanent') : 'permanent';
+              return `<option value="${v}" ${actuel === v ? 'selected' : ''}>${l}</option>`;
+            }).join('')}
+          </select>
+          <div class="field-hint" style="margin-top:3px;">Contrat à durée déterminée, saisonnier, intérimaire : non permanent.</div>
+        </div>
       </div>
       <div class="field" style="margin-bottom:0;">
         <label>Description détaillée du poste</label>
@@ -13786,6 +13930,8 @@ function saveEmployee(editId) {
   }
   const poste = document.getElementById('f-poste').value.trim().toUpperCase();
   const posteDescription = (document.getElementById('f-poste-description') || { value: '' }).value.trim();
+  const categoriePersonnel = (document.getElementById('f-categorie-personnel') || { value: '' }).value;
+  const permanence = (document.getElementById('f-permanence') || { value: 'permanent' }).value || 'permanent';
   const genre = document.getElementById('f-genre').value || detectGenderFromName(prenom) || '';
   const matricule = document.getElementById('f-matricule').value.trim();
   const naissanceRaw = document.getElementById('f-naissance').value.trim();
@@ -13816,7 +13962,7 @@ function saveEmployee(editId) {
       appConfirm(
         `Il s'agit peut-être de la même personne (risque de doublon).\n\nCliquez sur « Créer quand même » pour créer un employé distinct, ou sur Annuler pour vérifier d'abord.`,
         `⚠️ Un employé avec le matricule « ${matricule} » existe déjà : ${employeeFullName(dup)}`,
-        () => proceedSaveEmployee(editId, { prenom, nom, companyId, poste, posteDescription, genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin, employeur }),
+        () => proceedSaveEmployee(editId, { prenom, nom, companyId, poste, posteDescription, categoriePersonnel, permanence, genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin, employeur }),
         { confirmLabel: 'Créer quand même' }
       );
       return;
@@ -13840,22 +13986,23 @@ function saveEmployee(editId) {
         + `Rangé sous : ${ou}${derniere ? '\nDernière visite : ' + fmtDate(derniere) : ''}${dbl.length > 1 ? '\n(+ ' + (dbl.length - 1) + ' autre dossier au même nom)' : ''}\n\n`
         + `Ouvrir ce dossier évite un doublon aux antécédents coupés en deux. « Créer quand même » n'est justifié que s'il s'agit vraiment d'une autre personne.`,
         '\u26A0\uFE0F Ce salarié existe peut-être déjà',
-        () => proceedSaveEmployee(editId, { prenom, nom, companyId, poste, posteDescription, genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin, employeur }),
+        () => proceedSaveEmployee(editId, { prenom, nom, companyId, poste, posteDescription, categoriePersonnel, permanence, genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin, employeur }),
         { confirmLabel: 'Créer quand même', cancelLabel: 'Ouvrir le dossier existant',
           onCancel: () => { closeModal(); openEmployeeModal(d0.companyId, d0.id); } });
       return;
     }
   }
 
-  proceedSaveEmployee(editId, { prenom, nom, companyId, poste, posteDescription, genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin, employeur });
+  proceedSaveEmployee(editId, { prenom, nom, companyId, poste, posteDescription, categoriePersonnel, permanence, genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin, employeur });
 }
 function proceedSaveEmployee(editId, f) {
-  const { prenom, nom, companyId, poste, posteDescription, genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin, employeur } = f;
+  const { prenom, nom, companyId, poste, posteDescription, categoriePersonnel, permanence, genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin, employeur } = f;
   let newEmployeeId = null;
   if (editId) {
     const emp = state.employees.find(e => e.id === editId);
     if (emp) {
       emp.prenom = prenom; emp.nom = nom; emp.companyId = companyId; emp.poste = poste; emp.posteDescription = posteDescription || '';
+      emp.categoriePersonnel = categoriePersonnel || ''; emp.permanence = permanence || 'permanent';
       emp.genre = genre; emp.matricule = matricule; emp.dateNaissance = dateNaissance; emp.anneeEmbauche = anneeEmbauche; emp.social = social;
       emp.nbEnfants = nbEnfants; emp.niveauScolaire = niveauScolaire; emp.parcours = parcours;
       emp.cin = cin || ''; emp.employeur = employeur || '';
@@ -13863,7 +14010,7 @@ function proceedSaveEmployee(editId, f) {
     }
   } else {
     newEmployeeId = uid();
-    state.employees.push({ id: newEmployeeId, companyId, prenom, nom, poste, posteDescription: posteDescription || '', genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin: cin || '', employeur: employeur || '' });
+    state.employees.push({ id: newEmployeeId, companyId, prenom, nom, poste, posteDescription: posteDescription || '', categoriePersonnel: categoriePersonnel || '', permanence: permanence || 'permanent', genre, matricule, dateNaissance, anneeEmbauche, social, nbEnfants, niveauScolaire, parcours, cin: cin || '', employeur: employeur || '' });
   }
   if (employeur) retenirEmployeur(employeur);
   // Salarié créé depuis l'examen du jour : on y retourne, salarié sélectionné,
@@ -15499,10 +15646,19 @@ function openVisitModal(id, preselectEmployeeId, forceCompanyId) {
         </div>
         <div class="field">
           <label>Nature de la visite *</label>
-          <select id="f-nature-select" onchange="refreshExamResultsFields(); majMotifConsultation();">
+          <select id="f-nature-select" onchange="refreshExamResultsFields(); majMotifConsultation(); majMotifReprise();">
             ${natureOptions.map(([code, label]) => `<option value="${code}" ${editing ? (editing.nature === code ? 'selected' : '') : (code === 'VP' ? 'selected' : '')}>${label}</option>`).join('')}
           </select>
         </div>
+      </div>
+      <div class="field" id="f-reprise-wrap" style="display:none;">
+        <label>Motif de la reprise * <span class="muted" style="font-weight:400;">(point 3-3 du rapport annuel)</span></label>
+        <select id="f-motif-reprise">
+          ${[['', '—'], ['at', 'Après accident du travail'], ['mp', 'Après maladie professionnelle'],
+             ['maternite', 'Après congé de maternité'], ['absence21', 'Après absence pour raison de santé dépassant 21 jours'],
+             ['repetees', 'Après des absences répétées']].map(([v, l]) =>
+            `<option value="${v}" ${editing && editing.motifReprise === v ? 'selected' : ''}>${l}</option>`).join('')}
+        </select>
       </div>
       <div class="visit-grid-2">
         <div class="field"><label>Poste du salarié</label><input type="text" id="f-poste-visite" placeholder="Poste occupé au moment de la visite" value="${editing ? esc(editing.posteVisite) : ''}"></div>
@@ -15520,7 +15676,7 @@ function openVisitModal(id, preselectEmployeeId, forceCompanyId) {
           <textarea id="f-atcd-familial" rows="2" placeholder="Autres antécédents familiaux…">${esc(af.rest)}</textarea></div>
         <div class="field"><label>Maladies chroniques personnelles</label>
           ${atcdChecksHTML('f-atcdp-check', ap.checks)}
-          <label class="check-item" style="margin-top:6px;"><input type="checkbox" id="f-handicap" ${editing && editing.handicap ? 'checked' : ''}> Handicap</label>
+          <label class="check-item" style="margin-top:6px;"><input type="checkbox" id="f-handicap" onchange="suggererMotifsSms()" ${editing && editing.handicap ? 'checked' : ''}> Handicap</label>
           <textarea id="f-atcd-perso" rows="2" placeholder="Autres antécédents…">${esc(ap.rest)}</textarea></div>
       </div>
       <div class="visit-grid-2">
@@ -15648,6 +15804,23 @@ function openVisitModal(id, preselectEmployeeId, forceCompanyId) {
       <div class="field"><label>GAD</label><input type="text" id="f-c-gad" class="${gadIsAlert(c.gad) ? 'field-alert-input' : ''}" placeholder="0 à 4" style="max-width:90px;" oninput="checkGadColor(this)" value="${esc(c.gad)}"></div>
       <div class="field"><label>Abdomen</label><input type="text" id="f-c-abdomen" value="${esc(c.abdomen)}"></div>
       <div class="field"><label>Autres observations cliniques</label><textarea id="f-c-autres" rows="2">${esc(c.autres)}</textarea></div>
+      <div class="field" style="margin-bottom:0; border-top:1px solid var(--border); padding-top:12px;">
+        <label class="rlog-multi-item" style="margin:0;">
+          <input type="checkbox" id="f-sms" ${editing && editing.sms ? 'checked' : ''} onchange="majSurveillanceParticuliere()">
+          <span><b>Surveillance médicale particulière</b> <span class="muted" style="font-size:12px;">— points 3-1 et 3-2 du rapport annuel</span></span>
+        </label>
+        <div id="f-sms-motifs" style="display:none; margin-top:8px;">
+          <div class="rlog-multi">
+            ${[['at', "Travaux exposant aux risques d'accidents du travail"],
+               ['mp', 'Travaux exposant aux risques de maladies professionnelles']].map(([v, l]) => {
+              const coche = editing && Array.isArray(editing.smsMotifs) && editing.smsMotifs.includes(v);
+              return `<label class="rlog-multi-item"><input type="checkbox" class="f-sms-motif" value="${v}" ${coche ? 'checked' : ''}><span>${l}</span></label>`;
+            }).join('')}
+          </div>
+          <div class="field-hint" id="f-sms-suggere" style="margin-top:4px;"></div>
+          <div class="field-hint" id="f-sms-auto" style="margin-top:4px;"></div>
+        </div>
+      </div>
     </div>
 
     <div class="visit-section" style="border-left-color:var(--t-bleu-fg, #3E6FC4); background:#F5F8FD;">
@@ -15807,6 +15980,8 @@ function openVisitModal(id, preselectEmployeeId, forceCompanyId) {
   majChampSA();
   majMotifConsultation();
   majTourDeTaille();
+  majMotifReprise();
+  majSurveillanceParticuliere();
   majAccidentTravail();
   majDeclarationMP(editing && editing.mpDeclaration
     ? (editing.mpDeclaration.maladies || (editing.mpDeclaration.maladie ? [{ maladie: editing.mpDeclaration.maladie, agent: editing.mpDeclaration.agent, tableaux: editing.mpDeclaration.tableau }] : []))
@@ -15924,6 +16099,11 @@ function saveVisit(editId) {
   if (emp && emp.companyId) { state.lastVisitCompanyId = emp.companyId; state.lastVisitCompanyDate = todayISO(); }
   // Un salarié rangé sous le siège est, par définition, vu au groupement : le
   // lieu s'impose, quel que soit le choix affiché.
+  const natureEl2 = document.getElementById('f-nature-select');
+  if (natureEl2 && natureEl2.value === 'RT' && !((document.getElementById('f-motif-reprise') || {}).value || '')) {
+    appAlert('Une visite de reprise doit dire de quoi le salarié reprend : le point 3-3 du rapport annuel le réclame.', '\u26A0\uFE0F Motif de reprise manquant');
+    return;
+  }
   const atCase = document.getElementById('f-at-declare');
   if (atCase && atCase.checked && !((document.getElementById('f-at-date') || {}).value || '').trim()
       && !((document.getElementById('f-at-circonstances') || {}).value || '').trim()) {
@@ -16000,6 +16180,9 @@ function saveVisit(editId) {
     restrictionsAptitude: corrigerRemarqueAptitude(document.getElementById('f-restrictions').value.trim()),
     notesLibres: (document.getElementById('f-notes-libres') || { value: '' }).value.trim(),
     motifConsultation: (document.getElementById('f-motif') || { value: '' }).value.trim(),
+    motifReprise: (document.getElementById('f-motif-reprise') || { value: '' }).value,
+    sms: !!(document.getElementById('f-sms') || {}).checked,
+    smsMotifs: lireMotifsSms(),
     mpDeclaration: lireDeclarationMP(),
     accidentTravail: lireAccidentTravail(),
     prochaineDate: (document.getElementById('f-prochaine') || { value: (editId && (state.visits.find(x => x.id === editId) || {}).prochaineDate) || '' }).value,
