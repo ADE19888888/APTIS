@@ -1,0 +1,50 @@
+APTIS — DÉPÔT GITHUB
+====================
+
+Contenu à déposer tel quel :
+
+  index.html         APTIS V3.19 — l'application entière
+  README.md          la présentation du dépôt, avec le logo
+  .gitignore         bloque le générateur de licences et les registres
+  LISEZ-MOI_DEPOT.txt ce mode d'emploi (facultatif dans le dépôt)
+  .nojekyll          GitHub sert les fichiers sans les retraiter
+  assets/            le logo sous ses différentes formes
+
+LE LOGO
+-------
+  logo.svg               carré, fond bleu nuit — vectoriel, toutes tailles
+  logo-transparent.svg   le casque seul, sans fond
+  logo-512.png           icône d'application
+  logo-192.png           icône d'application, petite taille
+  apple-touch-icon.png   écran d'accueil iOS (180 px)
+  favicon-32.png         onglet du navigateur
+
+Couleurs : bleu nuit #14213D, or #D9BA55, blanc #FFFFFF.
+
+Le logo affiché par le README est assets/logo.svg. Il s'affichera aussi
+sur la page du dépôt.
+
+À SAVOIR SUR L'ICÔNE DU SITE
+----------------------------
+index.html porte déjà son icône, intégrée dans le fichier lui-même.
+Ouvert seul, sans le dossier assets, il garde donc son logo dans
+l'onglet et sur l'écran d'accueil. Les fichiers d'assets/ servent au
+dépôt, aux documents et à tout usage hors de l'application.
+
+ÉTAPES (sur github.com, sans rien installer)
+--------------------------------------------
+1. « + » → New repository. Nom : aptis. Public si vous voulez GitHub
+   Pages gratuitement. Ne cochez pas « Add a README » : il est fourni.
+2. « uploading an existing file » : glissez TOUT le contenu de ce
+   dossier, dossier assets compris. Les fichiers commençant par un
+   point sont cachés (Cmd+Shift+. sur Mac pour les voir). Commit.
+3. Pour publier : Settings → Pages → Deploy from a branch →
+   main / (root). L'adresse apparaît après une minute.
+
+À CHAQUE NOUVELLE VERSION
+-------------------------
+Renommez le nouveau fichier APTIS en index.html et déposez-le
+par-dessus. Le dossier assets ne bouge pas.
+
+NE DÉPOSEZ JAMAIS le générateur de licences : il contient votre clé
+privée de signature.
