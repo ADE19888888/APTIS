@@ -1930,8 +1930,13 @@ if (typeof XLSX === "undefined") console.warn("XLSX embarqué introuvable");</sc
   .cert-apt .cert-remarque-l { font-weight: bold; }
   .cert-apt .cert-libre { border-bottom: 1px dotted #000; min-height: 3.4mm;
     margin: .8mm 0 1.6mm 5mm; font-weight: bold; }
-  .cert-apt .cert-sign { margin-top: auto; padding-top: 6mm; text-align: right;
-    font-style: italic; font-weight: bold; }
+  /* Bas du certificat : le QR à gauche, la signature à droite. */
+  .cert-apt .cert-bas { margin-top: auto; padding-top: 6mm; display: flex;
+    align-items: flex-end; justify-content: space-between; gap: 6mm; }
+  .cert-apt .cert-bas .doc-qr-bloc { flex-shrink: 0; text-align: left; }
+  .cert-apt .cert-bas .doc-qr-bloc .doc-qr { margin: 0; }
+  .cert-apt .cert-bas .doc-qr-ref { text-align: left; }
+  .cert-apt .cert-sign { text-align: right; font-style: italic; font-weight: bold; flex: 1; }
   .cert-apt .cert-pied { margin-top: 3mm; padding-top: 1.2mm; border-top: .8pt solid #000;
     text-align: center; font-style: italic; font-weight: bold; font-size: 5.6pt; line-height: 1.35; }
   /* À l'écran (aperçu), on montre la demi-feuille à sa taille réelle. */
@@ -2000,6 +2005,8 @@ if (typeof XLSX === "undefined") console.warn("XLSX embarqué introuvable");</sc
   .report-print-wrap table.rp-doc > tfoot { display: table-footer-group; }
   .rp-fixe { display: flex; justify-content: space-between; align-items: center; gap: 6mm; font-size: 7.5pt; color: #444; padding: 0 1mm; }
   .rp-fixe-haut { border-bottom: .4pt solid #999; padding-bottom: 1.2mm; margin-bottom: 3mm; }
+  .rp-fixe-haut .doc-qr-bloc { margin-left: 3mm; flex-shrink: 0; }
+  .rp-fixe-haut .doc-qr-ref { font-size: 5.5pt; margin-top: .4mm; }
   .rp-fixe-bas { border-top: .4pt solid #999; padding-top: 1.2mm; margin-top: 3mm; }
   .rp-fixe-org { display: inline-flex; align-items: center; gap: 2mm; font-weight: bold; }
   .rp-fixe-logo { height: 8mm; width: auto; }
@@ -2032,6 +2039,13 @@ if (typeof XLSX === "undefined") console.warn("XLSX embarqué introuvable");</sc
     .report-print-wrap .dm-suite { page-break-before: always; break-before: page; }
     .report-print-wrap .dm-h-atcd { page-break-after: avoid; break-after: avoid; }
   }
+  /* QR de document */
+  .doc-qr-bloc { text-align: center; line-height: 1; }
+  .doc-qr-bloc .doc-qr { display: block; margin: 0 auto; }
+  .doc-qr-attente { display: block; margin: 0 auto; border: .3pt dashed #bbb; }
+  .report-print-wrap .dm-qr { float: right; margin: 0 0 2mm 3mm; }
+  .doc-qr-ref { font-size: 6.5pt; letter-spacing: .06em; color: #333; margin-top: .8mm; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .cert-qr { position: absolute; right: 4mm; bottom: 4mm; }
   .report-print-wrap .dm-tete {
     display: flex; align-items: center; justify-content: space-between;
     gap: 6mm; padding-bottom: 3mm; border-bottom: 1.4pt solid #000;
@@ -2386,7 +2400,7 @@ if (typeof XLSX === "undefined") console.warn("XLSX embarqué introuvable");</sc
       <button class="dt-btn" onclick="openChangePasswordModal()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--gold-500, #C9A227);"><rect x="4.5" y="10.5" width="15" height="10" rx="1.6"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path><circle cx="12" cy="15" r="1.4"></circle><path d="M12 16.4V18"></path></svg> <span id="password-btn-label">Activer un mot de passe</span></button>
       <button class="dt-btn" onclick="openLicenseModal()" title="Licence, code d'installation et renouvellement"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--gold-400, #D9BA55);"><circle cx="8" cy="12" r="4"></circle><path d="M12 12h9"></path><path d="M17.5 12v3.5"></path><path d="M20.5 12v2.5"></path></svg> Ma licence</button>
       <button class="dt-btn" onclick="ouvrirAideRaccourcis()" title="Liste des raccourcis clavier" style="font-size:11.5px;">Raccourcis clavier <span style="opacity:.6;">(?)</span></button>
-      <div id="sidebar-copyright" style="opacity: 0.7; font-size: 10.5px; margin-top: 10px; text-align: center; color: var(--side-fg); font-weight: 400;">© 2026 Dr ARFAOUI Dhia Eddine · Tous droits réservés<br><span style="opacity:.75;">APTIS V3.21</span></div>
+      <div id="sidebar-copyright" style="opacity: 0.7; font-size: 10.5px; margin-top: 10px; text-align: center; color: var(--side-fg); font-weight: 400;">© 2026 Dr ARFAOUI Dhia Eddine · Tous droits réservés<br><span style="opacity:.75;">APTIS V3.30</span></div>
     </div>
   </aside>
 
@@ -3096,6 +3110,7 @@ function updateDoctorNameDisplay() {
   if (!el) return;
   el.innerHTML = `${state.doctorName ? 'Dr ' + state.doctorName.replace(/</g, '&lt;') : 'Définir le nom du médecin'} <span style="display:inline-flex; vertical-align:-1px;">${svgIcon('pencil', 10)}</span>`;
 }
+
 function openDoctorNameModal() {
   document.getElementById('modal-body').className = 'modal modal-profil';
   const esc = (s) => (s || '').toString().replace(/"/g, '&quot;');
@@ -3160,6 +3175,10 @@ function openDoctorNameModal() {
           : `<div class="field" style="flex:${type === 'court' ? '0 1 150px' : '1 1 100%'};"><label>${lb}</label><input type="text" id="f-svc-${k}" value="${esc(gsstService(k))}"></div>`).join('')}
       </div>
     </details>
+    <div class="field" style="border-top:1px solid var(--border); padding-top:12px;">
+      <label>Authenticité des documents</label>
+      <div class="field-hint" style="margin:-2px 0 0;">Chaque document imprimé porte un QR code signé. Scanné, il ouvre <code>aptis-7pf.pages.dev/v</code>, qui indique s'il est authentique et par qui il a été établi. Rien à configurer.</div>
+    </div>
     <div class="modal-actions">
       <button class="btn secondary" onclick="closeModal()">Annuler</button>
       <button class="btn secondary" onclick="reinitGroupement()" title="Remettre les coordonnées du GSST de Tunis">Coordonnées par défaut</button>
@@ -3275,7 +3294,7 @@ function updateSidebarFootNote() {
     foot.textContent = `⚠ Plus d'une heure sans enregistrer (${minutes} min) — cliquez sur « Enregistrer »`;
     foot.style.color = '#F5C4B8'; foot.style.opacity = '1'; foot.style.fontWeight = '600';
   } else {
-    foot.innerHTML = '© 2026 Dr ARFAOUI Dhia Eddine · Tous droits réservés<br><span style="opacity:.75;">APTIS V3.21</span>';
+    foot.innerHTML = '© 2026 Dr ARFAOUI Dhia Eddine · Tous droits réservés<br><span style="opacity:.75;">APTIS V3.30</span>';
     foot.style.color = 'var(--side-fg, #C4CAD9)'; foot.style.opacity = '.7'; foot.style.fontWeight = '400';
   }
 }
@@ -3323,6 +3342,8 @@ async function loadAll() {
       state.tempsParVisite = decrypted.tempsParVisite || null;
       state.employeurs = decrypted.employeurs || [];
       state.corrections = decrypted.corrections || {};
+      state.docKey = decrypted.docKey || null;
+      state.confreresVerif = decrypted.confreresVerif || [];
       state.storageNamespace = embedded.fileId || null;
       state.dirtySinceBackup = false;
   state.dirtySince = null;
@@ -3449,6 +3470,8 @@ async function finishLoadAllUnencrypted(embedded) {
           if (p.tempsParVisite) state.tempsParVisite = p.tempsParVisite;
           if (p.employeurs) state.employeurs = p.employeurs;
           if (p.corrections) state.corrections = p.corrections;
+          if (p.docKey) state.docKey = p.docKey;
+          if (p.confreresVerif) state.confreresVerif = p.confreresVerif;
         }
       } catch (err) { console.error('Erreur de lecture du profil', err); }
       if (fileIsNewer) notifyFilePreferredOverSession();
@@ -3504,6 +3527,8 @@ async function finishLoadAllUnencrypted(embedded) {
     state.tempsParVisite = embedded.tempsParVisite || null;
     state.employeurs = embedded.employeurs || [];
     state.corrections = embedded.corrections || {};
+    state.docKey = embedded.docKey || null;
+    state.confreresVerif = embedded.confreresVerif || [];
     gotData = true;
     state.dirtySinceBackup = false;
   state.dirtySince = null;
@@ -3637,7 +3662,7 @@ function currentDoctorProfile() {
     tempsSociete: state.tempsSociete || {},
     tempsParVisite: state.tempsParVisite || null,
     employeurs: state.employeurs || [],
-    corrections: state.corrections || {},
+    corrections: state.corrections || {}, docKey: state.docKey || null, confreresVerif: state.confreresVerif || [],
   };
 }
 
@@ -3671,6 +3696,8 @@ function applyLoadedPayload(d) {
   state.tempsParVisite = d.tempsParVisite || state.tempsParVisite || null;
   state.employeurs = d.employeurs || [];
   state.corrections = d.corrections || {};
+  state.docKey = d.docKey || null;
+  state.confreresVerif = d.confreresVerif || [];
   siegeAccueil();
   try { corrigerRemarquesExistantes(); } catch (e) {}
 }
@@ -3925,7 +3952,7 @@ async function buildSavedHtml(name, fileId) {
     const envelope = await encryptDataObject({
       companies: state.companies, employees: state.employees, visits: state.visits, plannedVisits: state.plannedVisits, annualReports: state.annualReports, formations: state.formations, sensibilisations: state.sensibilisations, csstReunions: state.csstReunions, etudesPoste: state.etudesPoste, reunions: state.reunions || [], visitesLieux: state.visitesLieux || [], visitesTechniques: state.visitesTechniques || [], leaves: state.leaves || [], ignoredDuplicateGroups: state.ignoredDuplicateGroups, employeeListSnapshots: state.employeeListSnapshots || {}, reportGroups: state.reportGroups || {}, doctorName: state.doctorName, doctorPhone: state.doctorPhone, doctorEmail: state.doctorEmail, doctorAddress: state.doctorAddress,
     gsst: state.gsst, doctorCachet: state.doctorCachet || '', tempsSociete: state.tempsSociete || {},
-    tempsParVisite: state.tempsParVisite || null, employeurs: state.employeurs || [], corrections: state.corrections || {},
+    tempsParVisite: state.tempsParVisite || null, employeurs: state.employeurs || [], corrections: state.corrections || {}, docKey: state.docKey || null, confreresVerif: state.confreresVerif || [],
     }, state.currentPassword);
     payload = {
       fileId, fileName: name, encrypted: true,
@@ -3946,7 +3973,7 @@ async function buildSavedHtml(name, fileId) {
       trialMachine: state.__trialMachine || null, trialExports: state.__trialExports || 0,
       companies: state.companies, employees: state.employees, visits: state.visits, plannedVisits: state.plannedVisits, annualReports: state.annualReports, formations: state.formations, sensibilisations: state.sensibilisations, csstReunions: state.csstReunions, etudesPoste: state.etudesPoste, reunions: state.reunions || [], visitesLieux: state.visitesLieux || [], visitesTechniques: state.visitesTechniques || [], leaves: state.leaves || [], ignoredDuplicateGroups: state.ignoredDuplicateGroups, employeeListSnapshots: state.employeeListSnapshots || {}, reportGroups: state.reportGroups || {}, doctorName: state.doctorName, doctorPhone: state.doctorPhone, doctorEmail: state.doctorEmail, doctorAddress: state.doctorAddress,
     gsst: state.gsst, doctorCachet: state.doctorCachet || '', tempsSociete: state.tempsSociete || {},
-    tempsParVisite: state.tempsParVisite || null, employeurs: state.employeurs || [], corrections: state.corrections || {},
+    tempsParVisite: state.tempsParVisite || null, employeurs: state.employeurs || [], corrections: state.corrections || {}, docKey: state.docKey || null, confreresVerif: state.confreresVerif || [],
       exportedAt: new Date().toISOString(),
     };
   }
@@ -5021,6 +5048,12 @@ function exportAnnualReportPDFSimple(companyId, year) {
   </div>`;
   document.getElementById('print-area').innerHTML = html;
   setPrintOrientation('portrait');
+  const pa = document.getElementById('print-area');
+  pa.innerHTML = pa.innerHTML.replace('<div class="report-print-wrap">',
+    '<div class="report-print-wrap"><div class="dm-qr">' + blocQrDocument('RAPS', "Rapport annuel simplifié", {
+      ref: referenceDocument('RAPS', [c.name, String(year)]),
+      societe: c.name, date: year + '-12-31', detail: "Rapport annuel simplifié " + year,
+    }, 16) + '</div>');
   printWithFilename(`APTIS Rapport annuel simplifié ${c.name} ${year}`);
 }
 function exportAnnualReportPDF(companyId, year) {
@@ -5314,6 +5347,12 @@ function exportAnnualReportPDF(companyId, year) {
 
   document.getElementById('print-area').innerHTML = html;
   setPrintOrientation('portrait');
+  const pa = document.getElementById('print-area');
+  pa.innerHTML = pa.innerHTML.replace('<div class="report-print-wrap">',
+    '<div class="report-print-wrap"><div class="dm-qr">' + blocQrDocument('RAPA', "Rapport d'activité annuelle", {
+      ref: referenceDocument('RAPA', [c.name, String(year)]),
+      societe: c.name, date: year + '-12-31', detail: "Rapport d'activité annuelle " + year,
+    }, 16) + '</div>');
   printWithFilename(`APTIS Rapport annuel ${c.name} ${year}`);
 }
 
@@ -11113,7 +11152,11 @@ function rapportCsstHtml(companyId, annee) {
     ${tab(['Salarié', 'Dernier VAT'], conclusions.filter(v => v.vaccins && v.vaccins.vat && v.vaccins.vat.fait && v.vaccins.vat.annee && (+an - parseInt(v.vaccins.vat.annee, 10)) > 10).map(v => { const e = state.employees.find(x => x.id === v.employeeId) || {}; return [esc(employeeFullName(e)), esc(v.vaccins.vat.annee)]; }))}
   `;
 
-  return envelopperAvecEnteteEtPied(`Préparation CSST — ${esc(co.name)} — ${an}`, `<div class="rp-page csst-rp rp-avec-fixes">${partieA}</div><div class="rp-page csst-rp rp-avec-fixes">${partieB}</div>`);
+  return envelopperAvecEnteteEtPied(`Préparation CSST — ${esc(co.name)} — ${an}`,
+    `<div class="rp-page csst-rp rp-avec-fixes">${partieA}</div><div class="rp-page csst-rp rp-avec-fixes">${partieB}</div>`,
+    { type: 'CSST', libelle: "Dossier de préparation d'une réunion CSST",
+      champs: { ref: referenceDocument('CSST', [companyId, an, String(actifs.length), String(visites.length), state.doctorName || '']),
+        societe: co.name, date: an + '-12-31', detail: `${actifs.length} salariés` } });
 }
 
 
@@ -11141,12 +11184,14 @@ function enteteEtPiedFixes(titre) {
    pied (<tfoot>) sont répétés par le navigateur sur chaque page imprimée, ET
    ils réservent leur hauteur — contrairement à un bandeau fixé, qui se posait
    par-dessus les dernières lignes de la page. */
-function envelopperAvecEnteteEtPied(titre, corps) {
+function envelopperAvecEnteteEtPied(titre, corps, qr) {
   const esc = (t) => (t == null ? '' : String(t)).replace(/&/g, '&amp;').replace(/</g, '&lt;');
   const lignes = ['ligne1', 'ligne2', 'ligne3'].map(gsstChamp).filter(x => x && String(x).trim()).map(x => esc(String(x)));
   const logo = gsstLogo() ? `<img class="rp-fixe-logo" src="${gsstLogo()}" alt="">` : '';
+  // Le QR va dans l'en-tête répété : il se retrouve sur chaque page, à droite.
+  const bloc = qr ? blocQrDocument(qr.type, qr.libelle, qr.champs, 14) : '';
   return `<table class="rp-doc"><thead><tr><td>
-      <div class="rp-fixe rp-fixe-haut"><span class="rp-fixe-org">${logo}${esc(gsstChamp('nom') || 'Médecine du travail')}</span><span>${titre}</span></div>
+      <div class="rp-fixe rp-fixe-haut"><span class="rp-fixe-org">${logo}${esc(gsstChamp('nom') || 'Médecine du travail')}</span><span>${titre}</span>${bloc}</div>
     </td></tr></thead>
     <tfoot><tr><td><div class="rp-fixe rp-fixe-bas"><span>${lignes.join(' · ')}</span></div></td></tr></tfoot>
     <tbody><tr><td>${corps}</td></tr></tbody></table>`;
@@ -11311,7 +11356,9 @@ function recapEmployeurHtml(companyId, du, au) {
 
     <div class="rp-small" style="margin-top:6mm;">Ce récapitulatif reprend les conclusions figurant sur les certificats d'aptitude remis à l'entreprise. Il ne contient aucune information médicale : les constatations cliniques et les résultats d'examens sont couverts par le secret médical et restent dans le dossier tenu par le médecin du travail.</div>
     <div class="rp-signature">Dr ${esc(state.doctorName)}<br>Médecin du Travail${cachetHtml()}</div>
-  </div>`);
+  </div>`, { type: 'RECAP', libelle: "Récapitulatif de la surveillance médicale",
+    champs: { ref: referenceDocument('RECAP', [companyId, du, au, String(vus.length), String(emps.length), state.doctorName || '']),
+      societe: co.name, date: au, detail: `${vus.length} vus sur ${emps.length}` } });
 }
 
 function openRecapEmployeurModal(companyIdPreselect) {
@@ -11541,9 +11588,16 @@ function exportReportLogPDF(type, entryId) {
       </div>`;
   }
 
-  document.getElementById('print-area').innerHTML = `<div class="report-print-wrap">${pagesHtml}</div>`;
-  setPrintOrientation('portrait');
   const single = entryId ? entries[0] : null;
+  const qrTT = blocQrDocument('TT', cfg.docTitle || cfg.title, {
+    ref: referenceDocument('TT', [type, companyLabel, single ? single.id : 'lot', single ? single.date : entries.length + ' entrées']),
+    societe: single ? companyName(single.companyId) : companyLabel,
+    date: single ? single.date : todayISO(),
+    detail: (cfg.docTitle || cfg.title) + (single ? '' : ` \u2014 ${entries.length} entrées`),
+  }, 16);
+  document.getElementById('print-area').innerHTML =
+    `<div class="report-print-wrap"><div class="dm-qr">${qrTT}</div>${pagesHtml}</div>`;
+  setPrintOrientation('portrait');
   printWithFilename(single ? `APTIS ${cfg.docTitle || cfg.title} ${companyName(single.companyId)} ${single.date || ''}` : `APTIS ${cfg.title} ${companyLabel === 'Toutes sociétés confondues' ? 'Toutes societes' : companyLabel}`);
 }
 
@@ -13114,8 +13168,16 @@ function imprimerDossierPatient(emp, visits, avecFiche) {
       <div class="dm-lb">Date de naissance</div><div class="dm-vl">${emp.dateNaissance ? fmtDate(emp.dateNaissance) + (age !== null ? ' (' + age + ' ans)' : '') : ''}</div>
       <div class="dm-lb">Poste</div><div class="dm-vl">${esc(emp.poste || '')}</div>
     </div>`;
+  const qrDossier = blocQrDocument('DOSS', 'Dossier médical du travailleur', {
+    ref: referenceDocument('DOSS', [emp.id, visits.map(v => v.id).join(','), avecFiche ? 'fiche' : 'sans', state.doctorName || '']),
+    societe: companyName(emp.companyId),
+    salarie: employeeFullName(emp),
+    date: visits.length ? visits[visits.length - 1].date : todayISO(),
+    detail: visits.length ? `${visits.length} visite${visits.length > 1 ? 's' : ''}` : 'fiche seule',
+  }, 16);
   const dossierHtml = `
     <div class="rp-page">
+      <div class="dm-qr">${qrDossier}</div>
       ${avecFiche ? dossierMedicalPage1(emp, merged) : enTeteCourt}
       ${visits.length ? `<div class="dm-h">${avecFiche ? 'Visites médicales' : (visits.length > 1 ? 'Visites médicales' : 'Visite médicale')}</div>` : ''}
       ${visitsHtml}
@@ -16947,6 +17009,397 @@ function employeurPourDocument(emp, companyId) {
   return companyName(cid);
 }
 
+/* ---------- Générateur de QR code, sans réseau ----------
+   Mode octet, correction M, versions 1 à 10 — assez pour les quelques
+   dizaines de caractères d'une référence de document. Tout est calculé dans
+   le navigateur : aucune image n'est demandée à un serveur, ce qui est la
+   condition pour qu'APTIS reste utilisable hors ligne. */
+function qrGenerer(texte, niveau) {
+  const data = [];
+  for (const ch of unescape(encodeURIComponent(String(texte)))) data.push(ch.charCodeAt(0));
+
+  // Capacité en octets, mode octet, correction M, versions 1 à 10.
+  // Deux niveaux de correction : M pour les codes courts (plus robuste),
+  // L quand il faut loger une URL signée (plus de place).
+  const TABLES = {
+    M: { cap: [0, 14, 26, 42, 62, 84, 106, 122, 152, 180, 213],
+         ecc: [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26],
+         blocs: [null, [1, 0], [1, 0], [1, 0], [2, 0], [2, 0], [4, 0], [4, 0], [2, 2], [3, 2], [4, 1]],
+         format: [0x5412, 0x5125, 0x5E7C, 0x5B4B, 0x45F9, 0x40CE, 0x4F97, 0x4AA0] },
+    // Niveau L poussé jusqu'à la version 20 : il faut loger une URL signée
+    // qui porte aussi la clé publique du médecin.
+    L: { cap: [0, 17, 32, 53, 78, 106, 134, 154, 192, 230, 271, 321, 367, 425, 458, 520, 586, 644, 718, 792, 858],
+         ecc: [0, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28],
+         blocs: [null, [1, 0], [1, 0], [1, 0], [1, 0], [1, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 2], [4, 0], [2, 2], [4, 0], [3, 1], [5, 1], [5, 1], [1, 5], [5, 1], [3, 4], [3, 5]],
+         format: [0x77C4, 0x72F3, 0x7DAA, 0x789D, 0x662F, 0x6318, 0x6C41, 0x6976] },
+  };
+  const T = TABLES[(niveau || 'M').toUpperCase()] || TABLES.M;
+  const CAP_M = T.cap, ECC_M = T.ecc, BLOCS_M = T.blocs;
+  const TOTAL_CW = [0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346, 404, 466, 532, 581, 655, 733, 815, 901, 991, 1085];
+
+  let version = 0;
+  const vMax = CAP_M.length - 1;
+  for (let v = 1; v <= vMax; v++) if (data.length <= CAP_M[v]) { version = v; break; }
+  if (!version) return null;                       // texte trop long : on n'affiche rien plutôt qu'un code faux
+  const taille = 17 + 4 * version;
+
+  // ---- Flux binaire : indicateur de mode, longueur, données, remplissage ----
+  const bits = [];
+  const pousse = (val, n) => { for (let i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+  pousse(4, 4);                                     // mode octet
+  pousse(data.length, version <= 9 ? 8 : 16);
+  data.forEach(b => pousse(b, 8));
+  const totalCw = TOTAL_CW[version];
+  const [g1, g2] = BLOCS_M[version];
+  const nbBlocs = g1 + g2;
+  const eccParBloc = ECC_M[version];
+  const dataCw = totalCw - eccParBloc * nbBlocs;
+  const capaciteBits = dataCw * 8;
+  for (let i = 0; i < 4 && bits.length < capaciteBits; i++) bits.push(0);   // terminateur
+  while (bits.length % 8) bits.push(0);
+  const octets = [];
+  for (let i = 0; i < bits.length; i += 8) {
+    let o = 0; for (let j = 0; j < 8; j++) o = (o << 1) | bits[i + j];
+    octets.push(o);
+  }
+  const bourrage = [0xEC, 0x11];
+  for (let i = 0; octets.length < dataCw; i++) octets.push(bourrage[i % 2]);
+
+  // ---- Corps de Galois GF(256) pour Reed-Solomon ----
+  const EXP = new Array(512), LOG = new Array(256);
+  for (let i = 0, x = 1; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 0x100) x ^= 0x11D; }
+  for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  const mul = (a, b) => (a && b) ? EXP[LOG[a] + LOG[b]] : 0;
+  const polyGen = (n) => {
+    let g = [1];
+    for (let i = 0; i < n; i++) {
+      const ng = new Array(g.length + 1).fill(0);
+      for (let j = 0; j < g.length; j++) { ng[j] ^= mul(g[j], 1); ng[j + 1] ^= mul(g[j], EXP[i]); }
+      g = ng;
+    }
+    return g;
+  };
+  const rs = (bloc, n) => {
+    const gen = polyGen(n);
+    const res = bloc.concat(new Array(n).fill(0));
+    for (let i = 0; i < bloc.length; i++) {
+      const coef = res[i];
+      if (!coef) continue;
+      for (let j = 0; j < gen.length; j++) res[i + j] ^= mul(gen[j], coef);
+    }
+    return res.slice(bloc.length);
+  };
+
+  // ---- Découpage en blocs, puis entrelacement ----
+  const tailleG1 = Math.floor(dataCw / nbBlocs);
+  const blocsData = [], blocsEcc = [];
+  let pos = 0;
+  for (let b = 0; b < nbBlocs; b++) {
+    const n = tailleG1 + (b >= g1 ? 1 : 0);
+    const bloc = octets.slice(pos, pos + n); pos += n;
+    blocsData.push(bloc);
+    blocsEcc.push(rs(bloc, eccParBloc));
+  }
+  const flux = [];
+  const maxData = Math.max(...blocsData.map(b => b.length));
+  for (let i = 0; i < maxData; i++) blocsData.forEach(b => { if (i < b.length) flux.push(b[i]); });
+  for (let i = 0; i < eccParBloc; i++) blocsEcc.forEach(b => flux.push(b[i]));
+
+  // ---- Matrice : motifs fixes ----
+  const m = Array.from({ length: taille }, () => new Array(taille).fill(null));
+  const poser = (x, y, v) => { if (x >= 0 && y >= 0 && x < taille && y < taille) m[y][x] = v; };
+  const repere = (cx, cy) => {
+    for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++) {
+      const x = cx + dx, y = cy + dy;
+      if (x < 0 || y < 0 || x >= taille || y >= taille) continue;
+      const b = (dx >= 0 && dx <= 6 && (dy === 0 || dy === 6)) || (dy >= 0 && dy <= 6 && (dx === 0 || dx === 6))
+        || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4);
+      poser(x, y, b ? 1 : 0);
+    }
+  };
+  repere(0, 0); repere(taille - 7, 0); repere(0, taille - 7);
+  // Motifs d'alignement
+  const ALIGN = [[], [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50],
+    [6, 30, 54], [6, 32, 58], [6, 34, 62], [6, 26, 46, 66], [6, 26, 48, 70], [6, 26, 50, 74], [6, 30, 54, 78],
+    [6, 30, 56, 82], [6, 30, 58, 86], [6, 34, 62, 90]];
+  const al = ALIGN[version] || [];
+  al.forEach(cy => al.forEach(cx => {
+    if ((cx <= 8 && cy <= 8) || (cx >= taille - 9 && cy <= 8) || (cx <= 8 && cy >= taille - 9)) return;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++)
+      poser(cx + dx, cy + dy, (Math.abs(dx) === 2 || Math.abs(dy) === 2 || (dx === 0 && dy === 0)) ? 1 : 0);
+  }));
+  // Lignes de synchronisation
+  for (let i = 8; i < taille - 8; i++) { if (m[6][i] === null) m[6][i] = i % 2 === 0 ? 1 : 0; if (m[i][6] === null) m[i][6] = i % 2 === 0 ? 1 : 0; }
+  poser(8, taille - 8, 1);                          // module toujours noir
+  // Emplacements d'information de format, réservés
+  const reserve = [];
+  for (let i = 0; i <= 8; i++) { if (i !== 6) reserve.push([i, 8], [8, i]); }
+  for (let i = 0; i < 8; i++) reserve.push([taille - 1 - i, 8]);
+  for (let i = 0; i < 7; i++) reserve.push([8, taille - 1 - i]);
+  // Information de version, obligatoire à partir de la version 7.
+  const VERSION_INFO = { 7: 0x07C94, 8: 0x085BC, 9: 0x09A99, 10: 0x0A4D3, 11: 0x0BBF6, 12: 0x0C762,
+    13: 0x0D847, 14: 0x0E60D, 15: 0x0F928, 16: 0x10B78, 17: 0x1145D, 18: 0x12A17, 19: 0x13532, 20: 0x149A6 };
+  if (version >= 7) {
+    for (let i = 0; i < 18; i++) {
+      const a = Math.floor(i / 3), b = taille - 11 + (i % 3);
+      reserve.push([b, a], [a, b]);
+    }
+  }
+  reserve.forEach(([x, y]) => { if (m[y][x] === null) m[y][x] = 0; });
+
+  // ---- Pose des données en zigzag ----
+  const estLibre = (x, y) => m[y][x] === null;
+  const occupe = new Set(reserve.map(([x, y]) => x + ',' + y));
+  occupe.add(8 + ',' + (taille - 8));
+  const donneesBits = [];
+  flux.forEach(o => { for (let i = 7; i >= 0; i--) donneesBits.push((o >>> i) & 1); });
+  let idx = 0, montant = true;
+  for (let col = taille - 1; col > 0; col -= 2) {
+    if (col === 6) col--;
+    for (let i = 0; i < taille; i++) {
+      const y = montant ? taille - 1 - i : i;
+      for (const x of [col, col - 1]) {
+        if (!estLibre(x, y) || occupe.has(x + ',' + y)) continue;
+        m[y][x] = idx < donneesBits.length ? donneesBits[idx] : 0;
+        m[y][x] |= 0; m[y][x] = { v: m[y][x], data: true };
+        idx++;
+      }
+    }
+    montant = !montant;
+  }
+  // On remet à plat : { v, data } → nombre, en retenant les cases de données.
+  const estData = Array.from({ length: taille }, () => new Array(taille).fill(false));
+  for (let y = 0; y < taille; y++) for (let x = 0; x < taille; x++) {
+    if (m[y][x] && typeof m[y][x] === 'object') { estData[y][x] = true; m[y][x] = m[y][x].v; }
+    if (m[y][x] === null) m[y][x] = 0;
+  }
+
+  // ---- Masques et choix du meilleur ----
+  const MASQUES = [
+    (x, y) => (x + y) % 2 === 0,
+    (x, y) => y % 2 === 0,
+    (x, y) => x % 3 === 0,
+    (x, y) => (x + y) % 3 === 0,
+    (x, y) => (Math.floor(y / 2) + Math.floor(x / 3)) % 2 === 0,
+    (x, y) => (x * y) % 2 + (x * y) % 3 === 0,
+    (x, y) => ((x * y) % 2 + (x * y) % 3) % 2 === 0,
+    (x, y) => ((x + y) % 2 + (x * y) % 3) % 2 === 0,
+  ];
+  const FORMAT_M = T.format;
+  const penalite = (g) => {
+    let p = 0;
+    // Règle 1 : suites de même couleur
+    for (let i = 0; i < taille; i++) {
+      for (const ligne of [g[i], g.map(r => r[i])]) {
+        let n = 1;
+        for (let j = 1; j < taille; j++) {
+          if (ligne[j] === ligne[j - 1]) { n++; if (n === 5) p += 3; else if (n > 5) p++; }
+          else n = 1;
+        }
+      }
+    }
+    // Règle 2 : blocs 2×2
+    for (let y = 0; y < taille - 1; y++) for (let x = 0; x < taille - 1; x++)
+      if (g[y][x] === g[y][x + 1] && g[y][x] === g[y + 1][x] && g[y][x] === g[y + 1][x + 1]) p += 3;
+    // Règle 3 : motif 1:1:3:1:1
+    const motif1 = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0], motif2 = [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1];
+    const cherche = (ligne) => {
+      for (let i = 0; i + 11 <= taille; i++) {
+        let a = true, b = true;
+        for (let j = 0; j < 11; j++) { if (ligne[i + j] !== motif1[j]) a = false; if (ligne[i + j] !== motif2[j]) b = false; }
+        if (a) p += 40; if (b) p += 40;
+      }
+    };
+    for (let i = 0; i < taille; i++) { cherche(g[i]); cherche(g.map(r => r[i])); }
+    // Règle 4 : proportion de noir
+    let noirs = 0;
+    g.forEach(r => r.forEach(v => { if (v) noirs++; }));
+    const pct = noirs * 100 / (taille * taille);
+    p += Math.floor(Math.abs(pct - 50) / 5) * 10;
+    return p;
+  };
+  let meilleur = null, meilleurScore = Infinity, meilleurMasque = 0;
+  for (let k = 0; k < 8; k++) {
+    const g = m.map((r, y) => r.map((v, x) => estData[y][x] && MASQUES[k](x, y) ? v ^ 1 : v));
+    // Information de format
+    // Information de format, placée en deux exemplaires selon la norme :
+    // le bit 0 est le moins significatif.
+    const f = FORMAT_M[k];
+    for (let i = 0; i < 15; i++) {
+      const bit = (f >> i) & 1;
+      if (i < 6) g[i][8] = bit;
+      else if (i < 8) g[i + 1][8] = bit;
+      else g[taille - 15 + i][8] = bit;
+      if (i < 8) g[8][taille - 1 - i] = bit;
+      else if (i < 9) g[8][15 - i - 1 + 1] = bit;
+      else g[8][15 - i - 1] = bit;
+    }
+    g[taille - 8][8] = 1;
+    if (version >= 7) {
+      const vi = VERSION_INFO[version];
+      for (let i = 0; i < 18; i++) {
+        const bit = (vi >> i) & 1;
+        const a = Math.floor(i / 3), b = taille - 11 + (i % 3);
+        g[a][b] = bit; g[b][a] = bit;
+      }
+    }
+    const s = penalite(g);
+    if (s < meilleurScore) { meilleurScore = s; meilleur = g; meilleurMasque = k; }
+  }
+  return { taille, matrice: meilleur, version, masque: meilleurMasque };
+}
+/* ---------- Référence et QR code des documents ----------
+   Chaque document imprimé reçoit une référence courte, propre à lui : elle
+   dépend de son contenu, pas de l'heure d'impression — réimprimer le même
+   certificat redonne donc la même référence, alors que deux documents
+   différents en ont deux. Le QR l'affiche avec ce qu'il faut pour retrouver
+   la pièce : nature, société, salarié, date. Rien de médical : un certificat
+   se lit par-dessus l'épaule, son QR aussi. */
+/* ---------- Clé de signature des documents ----------
+   Chaque installation d'APTIS se fabrique, à la première impression, une paire
+   de clés ECDSA P-256. La privée ne quitte jamais le fichier de données ; la
+   publique voyage dans le QR. La page de vérification peut ainsi établir deux
+   choses : que le document n'a pas été retouché, et que tous les documents
+   portant la même empreinte de clé viennent bien du même cabinet.
+
+   Ce qu'elle NE peut PAS établir : à qui appartient cette clé. Pour cela, il
+   faut publier une fois son empreinte — elle est affichée dans le profil — et
+   la comparer. C'est une limite honnête : sans autorité de certification, une
+   signature prouve la constance, pas l'identité. */
+const b64u = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const deB64u = (t) => { let x = String(t).replace(/-/g, '+').replace(/_/g, '/'); while (x.length % 4) x += '='; const b = atob(x); const o = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) o[i] = b.charCodeAt(i); return o; };
+let __cleDoc = null;
+const CLE_LOCALE = 'aptis_doc_key';
+/* La clé est écrite à deux endroits : dans le fichier de données, pour qu'elle
+   voyage avec lui, ET dans ce navigateur, pour qu'une session fermée sans
+   enregistrer ne la fasse pas disparaître. Sans cela, une nouvelle clé naissait
+   à la session suivante et les documents déjà imprimés devenaient invérifiables. */
+function cleLocaleLire() {
+  try { const t = localStorage.getItem(CLE_LOCALE); return t ? JSON.parse(t) : null; } catch (e) { return null; }
+}
+function cleLocaleEcrire(k) { try { localStorage.setItem(CLE_LOCALE, JSON.stringify(k)); } catch (e) {} }
+
+async function cleDocuments() {
+  if (__cleDoc) return __cleDoc;
+  if (!state.docKey) {
+    // Une clé déjà utilisée sur ce poste prime : on ne recommence pas à zéro.
+    const locale = cleLocaleLire();
+    if (locale && locale.d && locale.x && locale.y) { state.docKey = locale; saveKey('docKey'); }
+  }
+  if (!state.docKey) {
+    const paire = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const priv = await crypto.subtle.exportKey('jwk', paire.privateKey);
+    state.docKey = { d: priv.d, x: priv.x, y: priv.y };
+    saveKey('docKey');
+  }
+  cleLocaleEcrire(state.docKey);
+  const k = state.docKey;
+  __cleDoc = {
+    privee: await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', d: k.d, x: k.x, y: k.y, ext: true }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']),
+    pub: k.x + '.' + k.y,
+  };
+  return __cleDoc;
+}
+
+function empreinteDocument(texte) {
+  // FNV-1a sur 32 bits, écrite en base 32 : court, stable, sans dépendance.
+  let h = 0x811c9dc5;
+  const t = String(texte);
+  for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  let out = '';
+  const A = '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ';   // sans I ni O, qu'on lit mal
+  let n = h;
+  for (let i = 0; i < 6; i++) { out = A[n % 34] + out; n = Math.floor(n / 34); }
+  return out;
+}
+function referenceDocument(type, elements) {
+  return type + '-' + empreinteDocument([type].concat(elements).join('\u0001'));
+}
+/* Le QR, rendu en SVG : il s'imprime net à toute taille et ne demande
+   aucune image au réseau. */
+function qrSvg(texte, mm, niveau) {
+  const r = qrGenerer(texte, niveau);
+  if (!r) return '';
+  const n = r.taille, marge = 2, total = n + marge * 2;
+  let carres = '';
+  for (let y = 0; y < n; y++) {
+    let x = 0;
+    while (x < n) {
+      if (!r.matrice[y][x]) { x++; continue; }
+      let l = 1;
+      while (x + l < n && r.matrice[y][x + l]) l++;
+      carres += `<rect x="${x + marge}" y="${y + marge}" width="${l}" height="1"/>`;
+      x += l;
+    }
+  }
+  return `<svg class="doc-qr" viewBox="0 0 ${total} ${total}" width="${mm}mm" height="${mm}mm" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+    <rect width="${total}" height="${total}" fill="#fff"/><g fill="#000">${carres}</g></svg>`;
+}
+/* ---------- Contenu du QR : une adresse de vérification signée ----------
+   Le QR mène à une page qui montre le strict nécessaire — nature du document,
+   société, initiales du salarié, date, référence — et rien de médical : ni
+   conclusion d'aptitude, ni diagnostic. Un certificat scanné dans un couloir
+   ne doit rien apprendre à celui qui passe. */
+const ADRESSE_VERIF = 'https://aptis-7pf.pages.dev/v';
+function initiales(nomComplet) {
+  return String(nomComplet || '').trim().split(/\s+/).filter(Boolean)
+    .map(m => m.charAt(0).toUpperCase() + '.').join(' ');
+}
+/* La charge utile, en texte séparé par des barres : plus courte qu'un JSON,
+   et le QR a une capacité limitée. Ordre fixe :
+   type | référence | date | société | initiales du salarié | détail */
+function chargeUtileQr(type, champs) {
+  // Le QR a une capacité limitée : on borne les champs libres. Le document
+  // imprimé porte le texte complet ; le code n'en porte que l'identité.
+  const court = (t, n) => { const v = String(t || '').trim(); return v.length > n ? v.slice(0, n - 1) + '\u2026' : v; };
+  return [type, champs.ref || '', champs.date || '', court(champs.societe, 40),
+    champs.salarie ? initiales(champs.salarie) : '', court(champs.detail, 40), court(champs.medecin, 40)]
+    .join('|').replace(/\|+$/, '');
+}
+let __qrEnAttente = [];
+/* Le SVG est d'abord posé vide, puis rempli quand la signature est prête :
+   l'impression attend cette étape (voir preparerQrDocuments). */
+function blocQrDocument(type, libelle, champs, mm) {
+  const ref = champs && champs.ref ? champs.ref : referenceDocument(type, [libelle]);
+  const id = 'qr-' + Math.random().toString(36).slice(2, 10);
+  __qrEnAttente.push({ id, type, champs: Object.assign({}, champs, { ref }), mm: mm || 18 });
+  return `<div class="doc-qr-bloc" id="${id}"><div class="doc-qr-attente" style="width:${mm || 18}mm; height:${mm || 18}mm;"></div><div class="doc-qr-ref">${ref}</div></div>`;
+}
+/* Signe et dessine tous les QR posés depuis le dernier appel. À faire juste
+   avant d'imprimer : la signature est asynchrone. */
+async function preparerQrDocuments() {
+  const liste = __qrEnAttente; __qrEnAttente = [];
+  if (!liste.length) return;
+  let cle;
+  try { cle = await cleDocuments(); } catch (e) { cle = null; }
+  for (const q of liste) {
+    const el = document.getElementById(q.id);
+    if (!el) continue;
+    let url;
+    try {
+      q.champs.medecin = ('Dr ' + (state.doctorName || '').replace(/^Dr\s*/i, '')).trim();
+      const corps = b64u(new TextEncoder().encode(chargeUtileQr(q.type, q.champs)));
+      const sig = b64u(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, cle.privee, new TextEncoder().encode(corps)));
+      // corps . signature . clé publique : la page vérifie sans rien connaître.
+      url = `${ADRESSE_VERIF}#${corps}.${sig}.${state.docKey.x}~${state.docKey.y}`;
+    } catch (e) {
+      // Sans clé disponible, on retombe sur un QR descriptif, non signé.
+      url = [q.champs.libelle || q.type, q.champs.societe, q.champs.salarie, q.champs.date, 'Réf. ' + q.champs.ref].filter(Boolean).join(' — ');
+    }
+    let svg = qrSvg(url, q.mm, 'L');
+    if (!svg) {
+      // Dernier recours : la référence seule suffit à retrouver le document.
+      const corpsMin = b64u(new TextEncoder().encode([q.type, q.champs.ref, q.champs.date || ''].join('|')));
+      try {
+        const sigMin = b64u(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, cle.privee, new TextEncoder().encode(corpsMin)));
+        svg = qrSvg(`${ADRESSE_VERIF}#${corpsMin}.${sigMin}.${state.docKey.x}~${state.docKey.y}`, q.mm, 'L');
+      } catch (e) { svg = qrSvg('Réf. ' + q.champs.ref, q.mm, 'M'); }
+    }
+    const attente = el.querySelector('.doc-qr-attente');
+    if (attente && svg) attente.outerHTML = svg;
+  }
+}
+
 function certificatAptitudeHtml(v) {
   // Les retours à la ligne saisis dans une remarque doivent se voir sur le
   // certificat : une éviction par ligne se lit mieux qu'un paragraphe.
@@ -17010,7 +17463,15 @@ function certificatAptitudeHtml(v) {
       ${a.autre ? `<div class="cert-opt">${coche(true)}<span>Autre conclusion :</span></div><div class="cert-libre${a.precision ? ' rempli' : ''}">${esc(a.precision) || '&nbsp;'}</div>` : ''}
       ${(a.apte && a.precision) ? `<div class="cert-remarque"><span class="cert-remarque-l">Remarques :</span> ${esc(a.precision)}</div>` : ''}
 
-      <div class="cert-sign">Le Médecin du Travail${cachetHtml(20)}</div>
+      <div class="cert-bas">
+        ${blocQrDocument('CERT', "Certificat médical d'aptitude au travail", {
+          ref: referenceDocument('CERT', [v.id || '', v.employeeId || '', v.date || '', v.resultat || '', state.doctorName || '']),
+          societe: employeurPourDocument(emp, v.companyId) || companyName(v.companyId),
+          salarie: emp ? employeeFullName(emp) : '',
+          date: v.date || '',
+        }, 16)}
+        <div class="cert-sign">Le Médecin du Travail${cachetHtml(20)}</div>
+      </div>
       ${(() => { const l = ['ligne1', 'ligne2', 'ligne3'].map(gsstChamp).filter(x => x && String(x).trim()).map(x => escHtml(String(x)));
                  return l.length ? '<div class="cert-pied">' + l.join('<br>') + '</div>' : ''; })()}
     </div>`;
@@ -17404,7 +17865,13 @@ function lancerCertificatsSociete(format) {
   printWithFilename(`Certificats aptitude ${companyName(companyId)} (${liste.length})`);
 }
 
-function printWithFilename(title) {
+/* Tous les chemins d'impression passent ici : c'est le bon endroit pour
+   attendre la signature des QR avant d'ouvrir la fenêtre d'impression. */
+async function printWithFilename(title) {
+  try { await preparerQrDocuments(); } catch (e) {}
+  return printWithFilenameInterne(title);
+}
+function printWithFilenameInterne(title) {
   if (!aptisConsumeExport('PDF')) return;
   const previousTitle = document.title;
   document.title = title;
@@ -22321,4 +22788,6 @@ aptisBootstrap();
     <div style="padding:18px 24px 6px; white-space:pre-wrap; font-size:13.5px; line-height:1.62; color:var(--text-primary);">Vos modifications seront enregistrées automatiquement, mais seulement après un premier enregistrement manuel (bouton « Enregistrer »). Une fois cet emplacement choisi, tout s'enregistrera ensuite tout seul, à chaque modification — sans autre action de votre part.</div>
     <div style="display:flex; justify-content:flex-end; padding:14px 24px 20px;">
       <button class="btn" id="app-alert-ok" style="min-width:110px; justify-content:center; padding:10px 20px; border-radius:8px;" onclick="closeAppAlert()">OK</button>
-    </div></div></div></div></body></html>
+    </div></div></div></div>
+
+</body></html>
